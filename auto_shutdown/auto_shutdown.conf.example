@@ -1,0 +1,69 @@
+# auto_shutdown.conf - copy from auto_shutdown.conf.example and lock it down:
+#   cp auto_shutdown.conf.example auto_shutdown.conf && chmod 600 auto_shutdown.conf
+# This file is sourced by bash. It holds credentials, so keep it private.
+# Every setting below shows its default; only the services (URLs/keys) really need filling in.
+
+# Minutes without any activity before the NAS shuts down.
+IDLE_MINUTES=15
+
+# Which checks run, in this order. Remove a name to disable that check.
+ENABLED_CHECKS=(schedule backrest immich paperless truenas sessions network)
+
+# Timeout (seconds) for each API request.
+HTTP_TIMEOUT=10
+
+# --- schedule ---------------------------------------------------------------
+# The NAS stays up while a job is at most SCHEDULE_LOOKAHEAD_MINUTES away from starting, so
+# the gaps between jobs do not trigger a shutdown.
+# Backrest's schedule is read from Backrest itself (its upcoming runs), nothing to list here.
+# List the start times of everything else, format "HH:MM" or "HH:MM@day,day" (only on those
+# days of the month). KEEP THIS IN SYNC with the schedule in Immich.
+SCHEDULED_STARTS=(
+    "02:00"        # Immich night tasks
+)
+SCHEDULE_LOOKAHEAD_MINUTES=90
+
+# --- services ---------------------------------------------------------------
+# Use the host ports of your TrueNAS apps. A container that is not running is treated as idle.
+
+# Backrest: leave USER/PASSWORD empty if authentication is disabled.
+BACKREST_URL="http://localhost:9898"
+BACKREST_USER=""
+BACKREST_PASSWORD=""
+
+# Immich: API key from Account Settings > API Keys. It must be allowed to read the job
+# queues (GET /api/queues); if unsure, create the key with all permissions.
+IMMICH_URL="http://localhost:2283"
+IMMICH_API_KEY=""
+
+# Paperless-ngx: token from "My Profile" in the web UI.
+PAPERLESS_URL="http://localhost:8000"
+PAPERLESS_TOKEN=""
+
+# --- truenas ----------------------------------------------------------------
+# Every RUNNING/WAITING middleware job blocks the shutdown. If a job is running all the
+# time (--dry-run prints the method of every job), add its method name here, e.g. "app.upgrade".
+JOB_IGNORE_METHODS=()
+
+# --- network ----------------------------------------------------------------
+# Traffic on the NAS's network interface (rx + tx) counts as activity when it averages more
+# than this many bytes per second since the last run (3000 B/s = about 0.9 MB per 5 minutes).
+# Every run logs the measured rate: read a few days of log to see your idle noise floor and
+# set the limit clearly above it, but low enough to notice light browsing.
+NET_MIN_BYTES_PER_SEC=3000
+# Interface to watch; empty = the one holding the default route (see `ip route`).
+NET_INTERFACE=""
+
+# --- notifications (ntfy) ---------------------------------------------------
+# Low priority: the NAS is shutting down. Default priority: shutdown failed, or a check keeps
+# failing (e.g. a rejected API key), which silently blocks every shutdown.
+# NTFY_URL includes the topic. Leave it empty to turn notifications off.
+NTFY_URL=""                  # e.g. "https://ntfy.example.com/nas"
+NTFY_TOKEN=""                # access token (tk_...) if the topic is protected
+NTFY_UNKNOWN_MINUTES=30      # a check must fail this long before you are told
+NTFY_REPEAT_HOURS=6          # ... and you are reminded at most this often
+
+# --- state and logging ------------------------------------------------------
+# Defaults live next to the script; put the script on a pool dataset so updates keep it.
+# STATE_DIR="/mnt/tank/scripts/auto_shutdown/state"
+# LOG_FILE="$STATE_DIR/auto_shutdown.log"     # LOG_FILE="" turns the log file off

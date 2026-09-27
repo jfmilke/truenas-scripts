@@ -1,0 +1,13 @@
+# Config files hold API keys/tokens (see auto_shutdown/README.md); the checked-in
+# ".example" template is the only variant that belongs in git.
+*.conf
+!*.conf.example
+
+# Runtime state and logs written by the scripts (e.g. auto_shutdown/state/).
+state/
+
+# Offline third-party API doc mirrors - reference material, not project source.
+Docs/
+
+# macOS
+.DS_Store
