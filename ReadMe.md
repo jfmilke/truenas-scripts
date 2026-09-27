@@ -2,10 +2,9 @@
 
 A variety of scripts which help administrating a TrueNAS system.
 
-> [!IMPORTANT]
-> Each script performing dangerous operations is marked as such. Use at your own discretion.
-
 > [!NOTE]
+> Each script performing dangerous operations is marked as such. Use at your own discretion.
+>
 > The structure will change depending on added scripts.  
 > As of now, all script utility lie below `auto_shutdown` but may be sourced into a shared folder when the need emerges.
 
@@ -29,6 +28,8 @@ Otherwise, the core essence of my preferred TrueNAS setup:
 
 ## Script: auto_shutdown.sh
 
+Full reference: [auto_shutdown/README.md](auto_shutdown/README.md)
+
 > [!CAUTION]
 > This script will shutdown your NAS.
 
@@ -51,7 +52,7 @@ If any of the below busy conditions are `true` the system is busy.
 | `sessions` | someone is logged in (SSH, console, shell) |
 | `network` | the network interface moved more than `NET_MIN_BYTES_PER_SEC` (rx + tx) since the last run |
 
-If configured, the script will send NTFY alerts when the shutdown was initiated or problems occured in script execution.
+If configured, the script will send NTFY alerts when the shutdown was initiated or problems occurred in script execution.
 
 ### Setup
 
@@ -66,6 +67,9 @@ nano auto_shutdown.conf
 
 # Set restrictive permissions for your config (may hold API tokens)
 chmod 600 auto_shutdown.conf
+
+# Test it: prints every check and the decision, changes nothing, never shuts down
+./auto_shutdown.sh --dry-run
 ```
 
 Then, open TrueNAS GUI and create a cron job running each 5 minutes:  

@@ -27,7 +27,8 @@ check_truenas() {
     own_ids=$(own_cronjob_ids)
     ignore_json=$(printf '%s\n' "${JOB_IGNORE_METHODS[@]}" | jq -R . | jq -s .)
 
-    # One "KIND<TAB>text" line per job: OWN (this script), IGNORED (JOB_IGNORE_METHODS) or BUSY.
+    # One "KIND<TAB>text" line per job: OWN (this script, never logged - see below),
+    # IGNORED (JOB_IGNORE_METHODS) or BUSY.
     # shellcheck disable=SC2016  # jq variables, not shell ones
     findings=$(jq -r --argjson own "$own_ids" --argjson ignore "$ignore_json" '
         .[]
@@ -43,7 +44,7 @@ check_truenas() {
         [[ -n $kind ]] || continue
         case $kind in
             BUSY)    echo "job running: $text"; busy=1 ;;
-            OWN)     echo "job ignored (this script's own cron job): $text" ;;
+            OWN)     ;; # this script's own cron job - implicitly not busy, not worth logging
             IGNORED) echo "job ignored (JOB_IGNORE_METHODS): $text" ;;
         esac
     done <<< "$findings"

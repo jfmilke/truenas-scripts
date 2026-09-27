@@ -35,9 +35,14 @@ decide. It has no logic of its own beyond that pipeline (see `auto_shutdown/auto
   for API calls with consistent down/error handling, `state_get`/`state_set` for the one
   value-per-file state store, `notify`/`notify_once`/`track_unknown_check` for ntfy alerts,
   `require_config` for a check to bail out (rc 2) when its config vars are unset.
-- **Decision loop**: every run refreshes `last_active` if any check is busy/unknown; boot time
-  also counts as activity (grace period after the nightly power-on); shutdown fires once
-  `now - last_active >= IDLE_MINUTES`. See `decide()` in `auto_shutdown.sh`.
+- **Decision loop**: the very first run ever (no `last_active` state file yet) always stays up
+  and just records `now` as the baseline, without consulting boot time — this avoids judging
+  idleness from boot time on that first run, which could otherwise shut the NAS down
+  immediately if it had already been up longer than `IDLE_MINUTES` before the cron job
+  started. From the next run on: every run refreshes `last_active` if any check is
+  busy/unknown; boot time also counts as activity (grace period after the nightly power-on);
+  shutdown fires once `now - last_active >= IDLE_MINUTES`. See `decide()` in
+  `auto_shutdown.sh`.
 - **State** lives in `STATE_DIR` (default `state/` next to the script), one small file per
   value (`last_active`, `net_rx`, `notified_<key>`, etc.) — not a single state blob. All state
   writes are no-ops under `--dry-run`.

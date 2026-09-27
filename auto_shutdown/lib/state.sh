@@ -2,6 +2,11 @@
 # Persistent state, one small file per name in STATE_DIR (last_active, network counters,
 # notification bookkeeping). All writes are skipped in --dry-run. Needs STATE_DIR and DRY_RUN.
 
+# state_exists NAME - true if a value has ever been recorded for NAME.
+state_exists() {
+    [[ -e "$STATE_DIR/$1" ]]
+}
+
 # state_get NAME - the stored epoch/number, or 0 when there is none.
 state_get() {
     local file="$STATE_DIR/$1" value=0

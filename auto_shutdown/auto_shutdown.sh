@@ -87,6 +87,17 @@ run_checks() {
 decide() {
     local now last_active boot idle_secs
     now=$(date +%s)
+
+    if ! state_exists last_active; then
+        # No history yet (first run ever, or state was cleared): don't judge idleness from
+        # boot time - that would shut down immediately if the NAS was already up longer than
+        # IDLE_MINUTES before this cron job started. Just record activity now; the next run
+        # (5 minutes later) has a real baseline to judge from.
+        state_set last_active "$now"
+        log_info "Decision: no history yet - staying up"
+        return 0
+    fi
+
     last_active=$(state_get last_active)
 
     if (( CHECKS_BUSY )); then
