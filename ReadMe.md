@@ -1,34 +1,78 @@
 # TrueNAS Scripts
 
-A variety of scripts which help administrating my TrueNAS.
+A variety of scripts which help administrating a TrueNAS system.
 
-Some notes about the TrueNAS setup these scripts are running on:
+> [!IMPORTANT]
+> Each script performing dangerous operations is marked as such. Use at your own discretion.
 
-- TrueNAS is running on the UGREEN DXP2800
-- Only Dockhand runs as a native TrueNAS app
-- All other apps (Immich, Paperless, ...) are running as docker containers managed by Dockhand
-- The NAS is only accessible from LAN or VPN
-- Homeassistant running on a Raspberry Pi manages the VPN and can wake the NAS via WOL
+> [!NOTE]
+> The structure will change depending on added scripts.  
+> As of now, all script utility lie below `auto_shutdown` but may be sourced into a shared folder when the need emerges.
 
-## auto_shutdown
+## Environment
 
-This script checks if the NAS is idling for a certain time and shuts it down if so.
-It is meant to be used in tandem with WakeOnLAN or a timed BIOS boot to start it in the night for scheduled tasks (backups, immich jobs, database exports, ...).
+The scripts are verified to run on TrueNAS 25.10.
 
-1. Create your own `auto_shutdown.conf` based on the example and fill values
-2. Call `auto_shutdown.sh` via Cronjob (i.e. each 5 minutes: `*/5 * * * *`) as root
+I recommend to:
 
-The script currently checks:
+- Be able to wake your NAS remotely
+- Don't expose the NAS to the internet (only by VPN)
 
-- Scheduled jobs in the next 90 minutes noted in the `auto_shutdown.conf`
-- Backrest via REST API if a backup is running or is scheduled within the next 90 minutes
-- Immich via REST API if any jobs are currently running or queued
-- Paperless via REST API if any tasks are currently running
-- TrueNAS via `midclt` & `zpool status` if any jobs are running
-- Active sessions via `who`
-- Network activity via kernel byte counters if it exceeds a certain threshold
+Otherwise, the core essence of my preferred TrueNAS setup:
 
-The script provides the following additional features:
+- Install [Dockhand](https://dockhand.pro/) via TrueNAS App Catalog
+- Manage **all other Docker containers** using Dockhand
+- Use a 24/7 running Raspberry Pi to
+  - Access your LAN via VPN
+  - Wake your NAS via WOL on demand
+  - Wake your NAS via WOL during each night for nightly jobs
 
-- Use NTFY to inform about shutdowns (low prio) and problems (default prio)
-- Log activity to `state/auto_shutdown.log` and auto-trim the file
+## Script: auto_shutdown.sh
+
+> [!CAUTION]
+> This script will shutdown your NAS.
+
+> [!NOTE]
+> By default, all checks are enabled.  
+> If you don't host immich or don't want to check network activity, remove the checks from `ENABLED_CHECKS`.
+
+Shuts the NAS down if it has been idling for `IDLE_MINUTES`.  
+Logs are written to `STATE_DIR` and trimmed automatically.
+
+If any of the below busy conditions are `true` the system is busy.
+
+| Check | Busy Condition |
+| ----- | -------------- |
+| `schedule` | a job from `SCHEDULED_STARTS` (see config) begins within the next 90 minutes |
+| `backrest` | an operation is running or the next scheduled run starts within 90 minutes |
+| `immich` | a queue has active, waiting or delayed jobs |
+| `paperless` | there are active tasks |
+| `truenas` | a middleware job is running/waiting, or a scrub/resilver is in progress |
+| `sessions` | someone is logged in (SSH, console, shell) |
+| `network` | the network interface moved more than `NET_MIN_BYTES_PER_SEC` (rx + tx) since the last run |
+
+If configured, the script will send NTFY alerts when the shutdown was initiated or problems occured in script execution.
+
+### Setup
+
+First, create your personal config file.
+
+```bash
+# Create your own config
+cp auto_shutdown.conf.example auto_shutdown.conf
+
+# Edit your config
+nano auto_shutdown.conf
+
+# Set restrictive permissions for your config (may hold API tokens)
+chmod 600 auto_shutdown.conf
+```
+
+Then, open TrueNAS GUI and create a cron job running each 5 minutes:  
+_System → Advanced Settings → Cron Jobs → Add_
+
+| Field | Value |
+| ----- | ----- |
+| Command | `/bin/bash /<path to scripts>/auto_shutdown.sh` |
+| Run as | `root` |
+| Schedule | `*/5 * * * *` |
