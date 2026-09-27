@@ -8,7 +8,7 @@ Some notes about the TrueNAS setup these scripts are running on:
 - Only Dockhand runs as a native TrueNAS app
 - All other apps (Immich, Paperless, ...) are running as docker containers managed by Dockhand
 - The NAS is only accessible from LAN or VPN
-- Homeassistant running on a Raspberry Pi managed the VPN and can wake the NAS via WOL
+- Homeassistant running on a Raspberry Pi manages the VPN and can wake the NAS via WOL
 
 ## auto_shutdown
 
@@ -21,14 +21,14 @@ It is meant to be used in tandem with WakeOnLAN or a timed BIOS boot to start it
 The script currently checks:
 
 - Scheduled jobs in the next 90 minutes noted in the `auto_shutdown.conf`
-- Backrest via REST API if any jobs are queried in the next 90 minutes
-- Immich via REST API if any jobs are currently running
+- Backrest via REST API if a backup is running or is scheduled within the next 90 minutes
+- Immich via REST API if any jobs are currently running or queued
 - Paperless via REST API if any tasks are currently running
-- TrueNAS via `midclt` if any jobs are running (excluding the auto_shutdown cron job)
-- Active SSH sessions via `who`
-- Network activity via kernel byte counters if it is below a certain threshold
+- TrueNAS via `midclt` & `zpool status` if any jobs are running
+- Active sessions via `who`
+- Network activity via kernel byte counters if it exceeds a certain threshold
 
-The provides the following additional features:
+The script provides the following additional features:
 
 - Use NTFY to inform about shutdowns (low prio) and problems (default prio)
-- Log activity to `state/auto_shutdown.log` and auto-trim it to 2MB
+- Log activity to `state/auto_shutdown.log` and auto-trim the file

@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository purpose
 
-A collection of scripts for administering a personal TrueNAS 25.10 server. Not a git
-repository. Currently contains one script, `auto_shutdown/`, which powers the NAS off once it
-has been idle; `Docs/` holds offline copies of the third-party API docs (Backrest, Immich,
-Paperless-ngx, TrueNAS) the scripts are written against, plus design specs under
-`Docs/superpowers/specs/`.
+A collection of scripts for administering a personal TrueNAS 25.10 server. Currently contains
+one script, `auto_shutdown/`, which powers the NAS off once it has been idle; `Docs/` holds
+offline copies of the third-party API docs (Backrest, Immich, Paperless-ngx, TrueNAS) the
+scripts are written against, plus design specs under `Docs/superpowers/specs/` — both are
+gitignored (reference material, not project source).
 
 Target runtime for every script here is the TrueNAS host itself: Debian, bash, root cron.
 There is no dev/test environment on the NAS, so verification happens elsewhere (see below)
@@ -43,8 +43,8 @@ decide. It has no logic of its own beyond that pipeline (see `auto_shutdown/auto
   writes are no-ops under `--dry-run`.
 - **Config** (`auto_shutdown.conf`, copied from `auto_shutdown.conf.example`) is sourced as
   bash and must be `chmod 600` (the script refuses to run otherwise). It holds API keys and
-  tokens — this repo has no `.gitignore` and isn't currently a git repository, so if it becomes
-  one, `auto_shutdown.conf` must be excluded before the first commit.
+  tokens; `.gitignore` excludes every `*.conf` except `*.conf.example`, so new scripts should
+  follow the same `<name>.conf` / `<name>.conf.example` pattern rather than inventing a new one.
 
 ### Key design points worth knowing before changing a check
 
@@ -86,6 +86,19 @@ used throughout this project's history, and the one to keep using:
    `nf_conntrack`-style OS specifics, an actual `system.shutdown` call) can only be confirmed
    by the user running it on the real hardware — say so explicitly rather than assuming
    something works because it passed in the container.
+
+## Git
+
+This repo has stricter-than-default rules for agents:
+
+- Never run `git commit` or `git push` unprompted.
+- Before any writing git action (commit, push, branch creation, etc.), ask for permission and
+  explain what will be done and why. One approval does not cover a later action.
+- If continuing a task requires a commit (e.g. a tool needs a clean tree), ask for permission to
+  commit rather than doing it silently.
+- Don't write unit tests for the shell scripts here — see the verification workflow above.
+- Unless explicitly asked to fix it, only check `ReadMe.md` for problems and suggest fixes in
+  chat; don't edit it directly.
 
 ## Docs/
 
